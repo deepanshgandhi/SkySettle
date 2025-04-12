@@ -1,0 +1,322 @@
+[
+    {
+        "airline": "Alaska Airlines",
+        "policy_type": "cancellations",
+        "commits": [
+            "Rebook passenger on same airline at no additional cost",
+            "Rebook on partner airline or another airline with which it has an agreement at no additional cost",
+            "Meal or meal cash/voucher when cancellation results in passenger waiting for 3 hours or more for a new flight",
+            "Complimentary hotel accommodations for any passenger affected by an overnight cancellation",
+            "Complimentary ground transportation to and from hotel for any passenger affected by an overnight cancellation",
+            "Credit/travel voucher when cancellation results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Frequent flyer miles when cancellation results in passenger waiting for 3 hours or more from the scheduled departure time"
+        ],
+        "does_not_commit": [
+            "Cash compensation when a cancellation results in passenger waiting for 3 hours or more from the scheduled departure time"
+        ]
+    },
+    {
+        "airline": "Allegiant Air",
+        "policy_type": "cancellations",
+        "commits": [
+            "Rebook passenger on same airline at no additional cost",
+            "Meal or meal cash/voucher when cancellation results in passenger waiting for 3 hours or more for a new flight",
+            "Complimentary hotel accommodations for any passenger affected by an overnight cancellation",
+            "Complimentary ground transportation to and from hotel for any passenger affected by an overnight cancellation"
+        ],
+        "does_not_commit": [
+            "Rebook on partner airline or another airline with which it has an agreement at no additional cost",
+            "Cash compensation when a delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Credit/travel voucher when delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Frequent flyer miles when delay results in passenger waiting for 3 hours or more from the scheduled departure time"
+        ]
+    },
+    {
+        "airline": "American Airlines",
+        "policy_type": "cancellations",
+        "commits": [
+            "Rebook passenger on same airline at no additional cost",
+            "Rebook on partner airline or another airline with which it has an agreement at no additional cost",
+            "Meal or meal cash/voucher when cancellation results in passenger waiting for 3 hours or more for a new flight",
+            "Complimentary hotel accommodations for any passenger affected by an overnight cancellation",
+            "Complimentary ground transportation to and from hotel for any passenger affected by an overnight cancellation"
+        ],
+        "does_not_commit": [
+            "Cash compensation when a delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Credit/travel voucher when delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Frequent flyer miles when delay results in passenger waiting for 3 hours or more from the scheduled departure time"
+        ]
+    },
+    {
+        "airline": "Delta Air Lines",
+        "policy_type": "cancellations",
+        "commits": [
+            "Rebook passenger on same airline at no additional cost",
+            "Rebook on partner airline or another airline with which it has an agreement at no additional cost",
+            "Meal or meal cash/voucher when cancellation results in passenger waiting for 3 hours or more for a new flight",
+            "Complimentary hotel accommodations for any passenger affected by an overnight cancellation",
+            "Complimentary ground transportation to and from hotel for any passenger affected by an overnight cancellation"
+        ],
+        "does_not_commit": [
+            "Cash compensation when a delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Credit/travel voucher when delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Frequent flyer miles when delay results in passenger waiting for 3 hours or more from the scheduled departure time"
+        ]
+    },
+    {
+        "airline": "Frontier Airlines",
+        "policy_type": "cancellations",
+        "commits": [
+            "Rebook passenger on same airline at no additional cost",
+            "Meal or meal cash/voucher when cancellation results in passenger waiting for 3 hours or more for a new flight"
+        ],
+        "does_not_commit": [
+            "Rebook on partner airline or another airline with which it has an agreement at no additional cost",
+            "Complimentary hotel accommodations for any passenger affected by an overnight cancellation",
+            "Complimentary ground transportation to and from hotel for any passenger affected by an overnight cancellation",
+            "Cash compensation when a delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Credit/travel voucher when delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Frequent flyer miles when delay results in passenger waiting for 3 hours or more from the scheduled departure time"
+        ]
+    },
+    {
+        "airline": "Hawaiian Airlines",
+        "policy_type": "cancellations",
+        "commits": [
+            "Rebook passenger on same airline at no additional cost",
+            "Rebook on partner airline or another airline with which it has an agreement at no additional cost",
+            "Meal or meal cash/voucher when cancellation results in passenger waiting for 3 hours or more for a new flight",
+            "Complimentary hotel accommodations for any passenger affected by an overnight cancellation",
+            "Complimentary ground transportation to and from hotel for any passenger affected by an overnight cancellation",
+            "Credit/travel voucher when delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Frequent flyer miles when delay results in passenger waiting for 3 hours or more from the scheduled departure time"
+        ],
+        "does_not_commit": [
+            "Cash compensation when a delay results in passenger waiting for 3 hours or more from the scheduled departure time"
+        ]
+    },
+    {
+        "airline": "JetBlue Airways",
+        "policy_type": "cancellations",
+        "commits": [
+            "Rebook passenger on same airline at no additional cost",
+            "Rebook on partner airline or another airline with which it has an agreement at no additional cost",
+            "Meal or meal cash/voucher when cancellation results in passenger waiting for 3 hours or more for a new flight",
+            "Complimentary hotel accommodations for any passenger affected by an overnight cancellation",
+            "Complimentary ground transportation to and from hotel for any passenger affected by an overnight cancellation",
+            "Credit/travel voucher when delay results in passenger waiting for 3 hours or more from the scheduled departure time"
+        ],
+        "does_not_commit": [
+            "Cash compensation when a delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Frequent flyer miles when delay results in passenger waiting for 3 hours or more from the scheduled departure time"
+        ]
+    },
+    {
+        "airline": "Southwest Airlines",
+        "policy_type": "cancellations",
+        "commits": [
+            "Rebook passenger on same airline at no additional cost",
+            "Meal or meal cash/voucher when cancellation results in passenger waiting for 3 hours or more for a new flight",
+            "Complimentary hotel accommodations for any passenger affected by an overnight cancellation",
+            "Complimentary ground transportation to and from hotel for any passenger affected by an overnight cancellation",
+            "Credit/travel voucher when delay results in passenger waiting for 3 hours or more from the scheduled departure time"
+        ],
+        "does_not_commit": [
+            "Rebook on partner airline or another airline with which it has an agreement at no additional cost",
+            "Cash compensation when a delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Frequent flyer miles when delay results in passenger waiting for 3 hours or more from the scheduled departure time"
+        ]
+    },
+    {
+        "airline": "Spirit Airlines",
+        "policy_type": "cancellations",
+        "commits": [
+            "Rebook passenger on same airline at no additional cost",
+            "Meal or meal cash/voucher when cancellation results in passenger waiting for 3 hours or more for a new flight",
+            "Complimentary hotel accommodations for any passenger affected by an overnight cancellation",
+            "Complimentary ground transportation to and from hotel for any passenger affected by an overnight cancellation"
+        ],
+        "does_not_commit": [
+            "Rebook on partner airline or another airline with which it has an agreement at no additional cost",
+            "Cash compensation when a delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Credit/travel voucher when delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Frequent flyer miles when delay results in passenger waiting for 3 hours or more from the scheduled departure time"
+        ]
+    },
+    {
+        "airline": "United Airlines",
+        "policy_type": "cancellations",
+        "commits": [
+            "Rebook passenger on same airline at no additional cost",
+            "Rebook on partner airline or another airline with which it has an agreement at no additional cost",
+            "Meal or meal cash/voucher when cancellation results in passenger waiting for 3 hours or more for a new flight",
+            "Complimentary hotel accommodations for any passenger affected by an overnight cancellation",
+            "Complimentary ground transportation to and from hotel for any passenger affected by an overnight cancellation"
+        ],
+        "does_not_commit": [
+            "Cash compensation when a delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Credit/travel voucher when delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Frequent flyer miles when delay results in passenger waiting for 3 hours or more from the scheduled departure time"
+        ]
+    },
+    {
+        "airline": "Alaska Airlines",
+        "policy_type": "delays",
+        "commits": [
+            "Rebook passenger on same airline at no additional cost for significant delays",
+            "Rebook on partner airline or another airline with which it has an agreement at no additional cost for significant delays",
+            "Meal or meal cash/voucher when flight delay results in passenger waiting for 3 hours or more",
+            "Complimentary hotel accommodations for any passenger affected by an overnight delay",
+            "Complimentary ground transportation to and from hotel for any passenger affected by an overnight delay",
+            "Credit/travel voucher when delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Frequent flyer miles when delay results in passenger waiting for 3 hours or more from the scheduled departure time"
+        ],
+        "does_not_commit": [
+            "Cash compensation when a delay results in passenger waiting for 3 hours or more from the scheduled departure time"
+        ]
+    },
+    {
+        "airline": "Allegiant Air",
+        "policy_type": "delays",
+        "commits": [
+            "Rebook passenger on same airline at no additional cost for significant delays",
+            "Meal or meal cash/voucher when flight delay results in passenger waiting for 3 hours or more",
+            "Complimentary hotel accommodations for any passenger affected by an overnight delay",
+            "Complimentary ground transportation to and from hotel for any passenger affected by an overnight delay"
+        ],
+        "does_not_commit": [
+            "Rebook on partner airline or another airline with which it has an agreement at no additional cost for significant delays",
+            "Cash compensation when a delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Credit/travel voucher when delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Frequent flyer miles when delay results in passenger waiting for 3 hours or more from the scheduled departure time"
+        ]
+    },
+    {
+        "airline": "American Airlines",
+        "policy_type": "delays",
+        "commits": [
+            "Rebook passenger on same airline at no additional cost for significant delays",
+            "Rebook on partner airline or another airline with which it has an agreement at no additional cost for significant delays",
+            "Meal or meal cash/voucher when flight delay results in passenger waiting for 3 hours or more",
+            "Complimentary hotel accommodations for any passenger affected by an overnight delay",
+            "Complimentary ground transportation to and from hotel for any passenger affected by an overnight delay"
+        ],
+        "does_not_commit": [
+            "Cash compensation when a delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Credit/travel voucher when delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Frequent flyer miles when delay results in passenger waiting for 3 hours or more from the scheduled departure time"
+        ]
+    },
+    {
+        "airline": "Delta Air Lines",
+        "policy_type": "delays",
+        "commits": [
+            "Rebook passenger on same airline at no additional cost for significant delays",
+            "Rebook on partner airline or another airline with which it has an agreement at no additional cost for significant delays",
+            "Meal or meal cash/voucher when flight delay results in passenger waiting for 3 hours or more",
+            "Complimentary hotel accommodations for any passenger affected by an overnight delay",
+            "Complimentary ground transportation to and from hotel for any passenger affected by an overnight delay"
+        ],
+        "does_not_commit": [
+            "Cash compensation when a delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Credit/travel voucher when delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Frequent flyer miles when delay results in passenger waiting for 3 hours or more from the scheduled departure time"
+        ]
+    },
+    {
+        "airline": "Frontier Airlines",
+        "policy_type": "delays",
+        "commits": [
+            "Rebook passenger on same airline at no additional cost for significant delays",
+            "Meal or meal cash/voucher when flight delay results in passenger waiting for 3 hours or more"
+        ],
+        "does_not_commit": [
+            "Rebook on partner airline or another airline with which it has an agreement at no additional cost for significant delays",
+            "Complimentary hotel accommodations for any passenger affected by an overnight delay",
+            "Complimentary ground transportation to and from hotel for any passenger affected by an overnight delay",
+            "Cash compensation when a delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Credit/travel voucher when delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Frequent flyer miles when delay results in passenger waiting for 3 hours or more from the scheduled departure time"
+        ]
+    },
+    {
+        "airline": "Hawaiian Airlines",
+        "policy_type": "delays",
+        "commits": [
+            "Rebook passenger on same airline at no additional cost for significant delays",
+            "Rebook on partner airline or another airline with which it has an agreement at no additional cost for significant delays",
+            "Meal or meal cash/voucher when flight delay results in passenger waiting for 3 hours or more",
+            "Complimentary hotel accommodations for any passenger affected by an overnight delay",
+            "Complimentary ground transportation to and from hotel for any passenger affected by an overnight delay",
+            "Credit/travel voucher when delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Frequent flyer miles when delay results in passenger waiting for 3 hours or more from the scheduled departure time"
+        ],
+        "does_not_commit": [
+            "Cash compensation when a delay results in passenger waiting for 3 hours or more from the scheduled departure time"
+        ]
+    },
+    {
+        "airline": "JetBlue Airways",
+        "policy_type": "delays",
+        "commits": [
+            "Rebook passenger on same airline at no additional cost for significant delays",
+            "Rebook on partner airline or another airline with which it has an agreement at no additional cost for significant delays",
+            "Meal or meal cash/voucher when flight delay results in passenger waiting for 3 hours or more",
+            "Complimentary hotel accommodations for any passenger affected by an overnight delay",
+            "Complimentary ground transportation to and from hotel for any passenger affected by an overnight delay",
+            "Credit/travel voucher when delay results in passenger waiting for 3 hours or more from the scheduled departure time"
+        ],
+        "does_not_commit": [
+            "Cash compensation when a delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Frequent flyer miles when delay results in passenger waiting for 3 hours or more from the scheduled departure time"
+        ]
+    },
+    {
+        "airline": "Southwest Airlines",
+        "policy_type": "delays",
+        "commits": [
+            "Rebook passenger on same airline at no additional cost for significant delays",
+            "Meal or meal cash/voucher when flight delay results in passenger waiting for 3 hours or more",
+            "Complimentary hotel accommodations for any passenger affected by an overnight delay",
+            "Complimentary ground transportation to and from hotel for any passenger affected by an overnight delay",
+            "Credit/travel voucher when delay results in passenger waiting for 3 hours or more from the scheduled departure time"
+        ],
+        "does_not_commit": [
+            "Rebook on partner airline or another airline with which it has an agreement at no additional cost for significant delays",
+            "Cash compensation when a delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Frequent flyer miles when delay results in passenger waiting for 3 hours or more from the scheduled departure time"
+        ]
+    },
+    {
+        "airline": "Spirit Airlines",
+        "policy_type": "delays",
+        "commits": [
+            "Rebook passenger on same airline at no additional cost for significant delays",
+            "Meal or meal cash/voucher when flight delay results in passenger waiting for 3 hours or more",
+            "Complimentary hotel accommodations for any passenger affected by an overnight delay",
+            "Complimentary ground transportation to and from hotel for any passenger affected by an overnight delay"
+        ],
+        "does_not_commit": [
+            "Rebook on partner airline or another airline with which it has an agreement at no additional cost for significant delay",
+            "Cash compensation when a delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Credit/travel voucher when delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Frequent flyer miles when delay results in passenger waiting for 3 hours or more from the scheduled departure time"
+        ]
+    },
+    {
+        "airline": "United Airlines",
+        "policy_type": "delays",
+        "commits": [
+            "Rebook passenger on same airline at no additional cost for significant delays",
+            "Rebook on partner airline or another airline with which it has an agreement at no additional cost for significant delays",
+            "Meal or meal cash/voucher when flight delay results in passenger waiting for 3 hours or more",
+            "Complimentary hotel accommodations for any passenger affected by an overnight delay",
+            "Complimentary ground transportation to and from hotel for any passenger affected by an overnight delay"
+        ],
+        "does_not_commit": [
+            "Cash compensation when a delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Credit/travel voucher when delay results in passenger waiting for 3 hours or more from the scheduled departure time",
+            "Frequent flyer miles when delay results in passenger waiting for 3 hours or more from the scheduled departure time"
+        ]
+    }
+]
