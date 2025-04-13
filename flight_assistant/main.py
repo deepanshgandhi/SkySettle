@@ -51,17 +51,10 @@ def get_flight_details(flight_number: str, date: str):
 
 def build_prompt(flight_details, policy):
     prompt = (
-        "You are an assistant that checks if a passenger is eligible for any benefits based on airline policies.\n\n"
-        "Carefully read the compensation policy and check what the airline commits to and what it does not.\n"
-        "Based only on the flight details and policy, determine if the passenger is eligible for anything — such as compensation, rebooking, refund, voucher, meals, hotel, or nothing at all.\n\n"
-        "Be clear and factual. Do not write a customer support message. No apologies or fluff.\n"
-        "Always include the airline name. Format dates/times nicely (e.g., 'April 12, 2025 at 6:05 PM local time').\n\n"
-        "Calculate the time delays based on the data available in the information provided.\n\n"
-        "Give the response only applicable for the user's scenario in order to not confuse the user.\n\n"
-        "Examples of tone:\n"
-        "- Delta Air Lines offers compensation in this case because...\n"
-        "- American Airlines does not offer compensation, but free rebooking is available because...\n"
-        "- Delta Air Lines provides no benefits here because...\n\n"
+        "You are an assistant that determines if a passenger is eligible for benefits based on airline compensation policies. "
+        "Review the flight details and the compensation policy below to decide if the passenger qualifies for any benefits (compensation, rebooking, refund, voucher, meals, hotel, etc.). "
+        "Be factual, clear, and avoid repeating provided information. "
+        "Provide a final answer in 2–4 concise sentences that is direct and to the point, includes the airline name, the relevant details (with dates/times formatted nicely, e.g., 'April 12, 2025 at 6:05 PM local time'), and the eligibility decision. \n\n"
         f"Flight Details:\n"
         f"- Airline: {flight_details['flight_name']}\n"
         f"- From: {flight_details['source']}\n"
@@ -69,9 +62,10 @@ def build_prompt(flight_details, policy):
         f"- Scheduled Departure: {flight_details['scheduled_time']}\n"
         f"- Actual Departure: {flight_details['actual_time']}\n\n"
         f"Compensation Policy:\n{policy}\n\n"
-        "Give the final answer and the reasoning in simple, readable language."
+        "Provide the final answer in 2–4 sentences without any extra sections or repeated information. Clearly state if they qualify for anything and DO NOT REPEAT information in the final answer."
     )
     return prompt
+
 
 
 

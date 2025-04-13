@@ -2,6 +2,7 @@ import json
 import requests
 import os
 from dotenv import load_dotenv
+import time
 load_dotenv()
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -15,7 +16,7 @@ def call_language_model(prompt: str):
     payload = {
         "model": "deepseek-r1-distill-llama-70b",
         "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.2,
+        "temperature": 0.1,
         "max_tokens": 1000,
         "stream": True
     }
@@ -33,6 +34,7 @@ def call_language_model(prompt: str):
                     content = data.get("choices", [{}])[0].get("delta", {}).get("content")
                     if content:
                         yield content
+                        time.sleep(0.01)
                 except Exception:
                     continue
 
