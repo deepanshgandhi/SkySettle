@@ -26,20 +26,19 @@ if st.button("Submit"):
         try:
             response = requests.get(api_url, stream=True)
             if response.status_code == 200:
-                st.session_state.compensation_fetched = True
                 st.session_state.output_text = ""
+                placeholder = st.empty()
 
                 for line in response.iter_lines(decode_unicode=True):
                     if line:
                         st.session_state.output_text += line.strip() + " "
 
-                formatted_text = (
-                    st.session_state.output_text
-                    .replace("<think>", "\n## Reasoning\n\n")
-                    .replace("</think>", "\n## Final Answer\n\n")
-                )
-                st.markdown("**Response:**")
-                st.markdown(formatted_text)
+                        formatted_text = (
+                            st.session_state.output_text
+                            .replace("<think>", "\n## Reasoning\n\n")
+                            .replace("</think>", "\n## Final Answer\n\n")
+                        )
+                        placeholder.markdown("**Response:**\n\n" + formatted_text)
             else:
                 st.error(f"API Error {response.status_code}: {response.text}")
         except Exception as e:
