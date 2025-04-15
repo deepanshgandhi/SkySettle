@@ -5,6 +5,7 @@ import requests
 import os
 import uvicorn
 from datetime import datetime, timedelta
+import time
 
 from flight_assistant.policy_loader import load_policies
 from flight_assistant.lm import call_language_model
@@ -81,13 +82,10 @@ async def get_compensation(
     try:
         # Get flight details from AeroDataBox API
         flight_details = get_flight_details(flight_number, date)
-        
-        # Get compensation policy based on flight name.
-        # The key is the flight name returned from the API.
+
         flight_name = flight_details["flight_name"]
         normalized_name = flight_name.lower()
 
-        # Filter all policies matching that airline (case-insensitive)
         matching_policies = [p for p in policies if p["airline"].lower() == normalized_name]
         if not matching_policies:
             policy = "No compensation policy available for this flight."
@@ -97,19 +95,24 @@ async def get_compensation(
             for p in matching_policies:
                 all_commits.extend(p.get("commits", []))
                 all_does_not_commit.extend(p.get("does_not_commit", []))
-            
+
             policy = (
                 f"Commits:\n- " + "\n- ".join(all_commits) +
                 f"\n\nDoes Not Commit:\n- " + "\n- ".join(all_does_not_commit)
             )
-        
-        # Build prompt for the language model
+
         prompt = build_prompt(flight_details, policy)
-        
-        # Call the language model and stream the response word by word
-        stream_generator = call_language_model(prompt)
-        return StreamingResponse(stream_generator, media_type="text/plain")
-    
+
+        def stream_generator():
+            try:
+                for chunk in call_language_model(prompt):
+                    yield chunk.encode("utf-8")
+                    time.sleep(0.01)  # optional: makes streaming feel more natural
+            except Exception as e:
+                yield f"\n\n[Error occurred: {str(e)}]".encode("utf-8")
+
+        return StreamingResponse(stream_generator(), media_type="text/plain")
+
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
