@@ -41,13 +41,14 @@ def get_flight_details(flight_number: str, date: str):
     destination = flight.get("arrival", {}).get("airport", {}).get("iata", "Unknown")
     scheduled_time = flight.get("departure", {}).get("scheduledTime", {}).get("local", "Unknown")
     actual_time = flight.get("departure", {}).get("runwayTime", {}).get("local", "Unknown")
-    
+    status = flight.get("status","Unknown")
     return {
         "flight_name": flight_name,
         "source": source,
         "destination": destination,
         "scheduled_time": scheduled_time,
-        "actual_time": actual_time
+        "actual_time": actual_time,
+        "status": status
     }
 
 def build_prompt(flight_details, policy):
@@ -55,15 +56,16 @@ def build_prompt(flight_details, policy):
         "You are an assistant that determines if a passenger is eligible for benefits based on airline compensation policies. "
         "Review the flight details and the compensation policy below to decide if the passenger qualifies for any benefits (compensation, rebooking, refund, voucher, meals, hotel, etc.). "
         "Be factual, clear, and avoid repeating provided information. "
-        "Provide a final answer in 2–4 concise sentences that is direct and to the point, includes the airline name, the relevant details (with dates/times formatted nicely, e.g., 'April 12, 2025 at 6:05 PM local time'), and the eligibility decision. \n\n"
+        "Provide a answer that is direct and to the point, includes the airline name, the relevant details (with dates/times formatted nicely, e.g., 'April 12, 2025 at 6:05 PM local time'), and the eligibility decision. \n\n"
         f"Flight Details:\n"
         f"- Airline: {flight_details['flight_name']}\n"
         f"- From: {flight_details['source']}\n"
         f"- To: {flight_details['destination']}\n"
         f"- Scheduled Departure: {flight_details['scheduled_time']}\n"
         f"- Actual Departure: {flight_details['actual_time']}\n\n"
+        f"- Status: {flight_details['status']}\n\n"
         f"Compensation Policy:\n{policy}\n\n"
-        "Provide the final answer in 2–4 sentences without any extra sections or repeated information. Clearly state if they qualify for anything and DO NOT REPEAT information in the final answer."
+        "Provide the final answer in 2–4 sentences without any extra sections or repeated information. Clearly state if they qualify for anything, include the airline name and DO NOT REPEAT information in the final answer."
     )
     return prompt
 
@@ -119,7 +121,7 @@ async def get_flight_stats(
 ):
     try:
         end_date = datetime.strptime(date, "%Y-%m-%d")
-        start_date = end_date - timedelta(days=6)
+        start_date = end_date - timedelta(days=7)
         url = (
             f"https://aerodatabox.p.rapidapi.com/flights/number/{flight_number}/"
             f"{start_date.date()}/{end_date.date()}?dateLocalRole=Both"

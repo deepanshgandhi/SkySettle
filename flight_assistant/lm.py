@@ -34,7 +34,6 @@ def call_language_model(prompt: str):
                     content = data.get("choices", [{}])[0].get("delta", {}).get("content")
                     if content:
                         yield content
-                        time.sleep(0.01)
                 except Exception:
                     continue
 
