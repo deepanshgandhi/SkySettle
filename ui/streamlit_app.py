@@ -41,6 +41,7 @@ if st.button("Submit"):
         try:
             response = requests.get(api_url, stream=True)
             if response.status_code == 200:
+                st.session_state.compensation_fetched = True
                 st.session_state.output_text = ""
                 placeholder = st.empty()
 
@@ -63,10 +64,9 @@ if st.button("Submit"):
 
 # Flight History button (shown only after compensation is fetched)
 if st.session_state.compensation_fetched:
-    if "flight_details" not in st.session_state:
-        st.session_state.flight_details = None
-    if "cancellation_reason" not in st.session_state:
-        st.session_state.cancellation_reason = ""
+    if "show_history" not in st.session_state:
+        st.session_state.show_history = False
+
     if st.button("Show Flight History for Last 7 Days"):
         stats_url = f"http://localhost:8000/flight-stats?flight_number={flight_number}&date={date_str}"
         st.info("Fetching flight stats...")
@@ -74,20 +74,26 @@ if st.session_state.compensation_fetched:
             stats_response = requests.get(stats_url)
             if stats_response.status_code == 200:
                 stats = stats_response.json()
-                st.markdown("### ✈️ Flight Performance Summary")
-                col1, col2, col3 = st.columns(3)
-                col1.metric("Total Flights", stats["total_flights"])
-                col2.metric("On Time", stats["on_time"])
-                col3.metric("Delayed", stats["delayed"])
-                st.metric("Cancelled", stats["cancelled"])
-                if stats["avg_delay_minutes"]:
-                    st.metric("Avg Delay (min)", stats["avg_delay_minutes"])
+                st.session_state.show_history = True
+                st.session_state.flight_stats = stats
             else:
                 st.error(
                     f"Flight stats error {stats_response.status_code}: {stats_response.text}"
                 )
         except Exception as e:
             st.error(f"An error occurred: {e}")
+
+    if st.session_state.show_history and "flight_stats" in st.session_state:
+        stats = st.session_state.flight_stats
+        st.markdown("### Flight Performance Summary")
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Total Flights", stats["total_flights"])
+        col2.metric("On Time", stats["on_time"])
+        col3.metric("Delayed", stats["delayed"])
+        st.metric("Cancelled", stats["cancelled"])
+        if stats["avg_delay_minutes"]:
+            st.metric("Avg Delay (min)", stats["avg_delay_minutes"])
+
 
 if st.button("Why was this flight cancelled?"):
     cancel_url = f"http://localhost:8000/cancellation-reason?flight_number={flight_number}&date={date_str}"
@@ -108,5 +114,5 @@ if st.button("Why was this flight cancelled?"):
         )
 
     if st.session_state.cancellation_reason:
-        st.markdown("### ❌ Cancellation Reason")
+        st.markdown("### Cancellation Reason")
         st.info(st.session_state.cancellation_reason)

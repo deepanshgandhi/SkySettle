@@ -11,6 +11,7 @@ from flight_assistant.policy_loader import load_policies
 from flight_assistant.lm import call_language_model
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
+
 load_dotenv()
 
 app = FastAPI()
@@ -19,7 +20,9 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8081",],
+    allow_origins=[
+        "http://localhost:8081",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -90,6 +93,7 @@ def get_flight_details(flight_number: str, date: str, cancellation_reason_flag: 
             query = f"{flight_name} flight cancellation reason {date}"
             brave_response = query_brave_search(query)
             web_snippets = extract_brave_snippets(brave_response)
+            flight_stats = fetch_flight_stats(flight_number, date)
 
             cancellation_reason = infer_cancellation_reason(
                 {
@@ -101,6 +105,7 @@ def get_flight_details(flight_number: str, date: str, cancellation_reason_flag: 
                     "status": status,
                 },
                 web_snippets,
+                flight_stats=flight_stats,
             )
 
     return {
@@ -111,7 +116,6 @@ def get_flight_details(flight_number: str, date: str, cancellation_reason_flag: 
         "actual_time": actual_time,
         "status": status,
         "cancellation_reason": cancellation_reason,
-
     }
 
 
@@ -134,20 +138,37 @@ def build_prompt(flight_details, policy):
     return prompt
 
 
-def infer_cancellation_reason(flight_details, web_snippets=None):
+def infer_cancellation_reason(flight_details, web_snippets=None, flight_stats=None):
     snippet_text = "\n".join(web_snippets or [])
-    print("Infer web search", snippet_text)
+
+    stats_summary = ""
+    if flight_stats:
+        stats_summary = (
+            f"Flight history over the past 7 days:\n"
+            f"- Total Flights: {flight_stats.get('total_flights', 0)}\n"
+            f"- On Time: {flight_stats.get('on_time', 0)}\n"
+            f"- Delayed: {flight_stats.get('delayed', 0)}\n"
+            f"- Cancelled: {flight_stats.get('cancelled', 0)}\n"
+        )
+        if flight_stats.get("avg_delay_minutes"):
+            stats_summary += (
+                f"- Avg Delay: {flight_stats['avg_delay_minutes']} minutes\n"
+            )
+
     prompt = (
-        "You are a knowledgeable aviation assistant. A flight was cancelled. "
-        "Use the following factual information from the web and the flight details to summarize the likely reason in 3–4 sentences.\n\n"
-        f"Flight: {flight_details['flight_name']}\n"
-        f"From: {flight_details['source']} To: {flight_details['destination']}\n"
-        f"Scheduled Departure: {flight_details['scheduled_time']}\n"
-        f"Actual Departure: {flight_details['actual_time']}\n"
-        f"Status: {flight_details['status']}\n\n"
-        f"Factual Web Data:\n{snippet_text}\n\n"
-        "What is the most likely reason for cancellation? Respond in 3–4 concise sentences."
+        "You are a knowledgeable aviation assistant. A flight was cancelled or delayed. "
+        "Use the following data to determine and explain the likely reason for the disruption in 3–4 clear and concise sentences.\n\n"
+        f"Flight Details:\n"
+        f"- Airline: {flight_details['flight_name']}\n"
+        f"- From: {flight_details['source']} To: {flight_details['destination']}\n"
+        f"- Scheduled Departure: {flight_details['scheduled_time']}\n"
+        f"- Actual Departure: {flight_details['actual_time']}\n"
+        f"- Status: {flight_details['status']}\n\n"
+        f"{stats_summary}\n"
+        f"Web Search Results:\n{snippet_text}\n\n"
+        "What is the most likely reason for the cancellation or delay? Respond in 3–4 sentences."
     )
+
     return "".join(call_language_model(prompt)).strip()
 
 
@@ -210,9 +231,83 @@ async def get_compensation(
         response = "".join(call_language_model(prompt)).strip()
         return JSONResponse(content={"answer": response})
 
-
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+def fetch_flight_stats(flight_number: str, date: str):
+    end_date = datetime.strptime(date, "%Y-%m-%d")
+    start_date = end_date - timedelta(days=7)
+    url = (
+        f"https://aerodatabox.p.rapidapi.com/flights/number/{flight_number}/"
+        f"{start_date.date()}/{end_date.date()}?dateLocalRole=Both"
+    )
+
+    headers = {"x-rapidapi-key": RAPIDAPI_KEY, "x-rapidapi-host": RAPIDAPI_HOST}
+
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        raise Exception(f"Failed to fetch historical data: {response.status_code}")
+
+    flights = response.json() or []
+
+    stats = {
+        "total_flights": 0,
+        "on_time": 0,
+        "delayed": 0,
+        "cancelled": 0,
+        "avg_delay_minutes": 0.0,
+        "details": [],
+    }
+
+    total_delay = 0
+    for flight in flights:
+        stats["total_flights"] += 1
+        status = flight.get("status", "").lower()
+        flight_date = (
+            flight.get("departure", {}).get("scheduledTime", {}).get("local", "Unknown")
+        )
+
+        if status == "cancelled":
+            stats["cancelled"] += 1
+            stats["details"].append(
+                {"date": flight_date, "status": "Cancelled", "delay_minutes": None}
+            )
+            continue
+
+        sched = flight.get("departure", {}).get("scheduledTime", {}).get("utc")
+        actual = flight.get("departure", {}).get("runwayTime", {}).get("utc")
+        if sched and actual:
+            sched_time = datetime.strptime(sched, "%Y-%m-%d %H:%MZ")
+            actual_time = datetime.strptime(actual, "%Y-%m-%d %H:%MZ")
+            delay_min = (actual_time - sched_time).total_seconds() / 60
+
+            if delay_min > 15:
+                stats["delayed"] += 1
+            else:
+                stats["on_time"] += 1
+
+            total_delay += delay_min
+            stats["details"].append(
+                {
+                    "date": flight_date,
+                    "status": "Delayed" if delay_min > 15 else "On Time",
+                    "delay_minutes": round(delay_min),
+                }
+            )
+        else:
+            stats["details"].append(
+                {
+                    "date": flight_date,
+                    "status": "Unknown (missing times)",
+                    "delay_minutes": None,
+                }
+            )
+
+    if stats["delayed"] > 0:
+        stats["avg_delay_minutes"] = round(total_delay / stats["delayed"], 2)
+
+    return stats
 
 
 @app.get("/flight-stats")
@@ -221,83 +316,95 @@ async def get_flight_stats(
     date: str = Query(..., description="Flight date in YYYY-MM-DD format"),
 ):
     try:
-        end_date = datetime.strptime(date, "%Y-%m-%d")
-        start_date = end_date - timedelta(days=7)
-        url = (
-            f"https://aerodatabox.p.rapidapi.com/flights/number/{flight_number}/"
-            f"{start_date.date()}/{end_date.date()}?dateLocalRole=Both"
-        )
-
-        headers = {"x-rapidapi-key": RAPIDAPI_KEY, "x-rapidapi-host": RAPIDAPI_HOST}
-
-        response = requests.get(url, headers=headers)
-        if response.status_code != 200:
-            raise Exception(f"Failed to fetch historical data: {response.status_code}")
-
-        flights = response.json() or []
-
-        stats = {
-            "total_flights": 0,
-            "on_time": 0,
-            "delayed": 0,
-            "cancelled": 0,
-            "avg_delay_minutes": 0.0,
-            "details": [],
-        }
-
-        total_delay = 0
-        for flight in flights:
-            stats["total_flights"] += 1
-            status = flight.get("status", "").lower()
-            flight_date = (
-                flight.get("departure", {})
-                .get("scheduledTime", {})
-                .get("local", "Unknown")
-            )
-
-            if status == "cancelled":
-                stats["cancelled"] += 1
-                stats["details"].append(
-                    {"date": flight_date, "status": "Cancelled", "delay_minutes": None}
-                )
-                continue
-
-            sched = flight.get("departure", {}).get("scheduledTime", {}).get("utc")
-            actual = flight.get("departure", {}).get("runwayTime", {}).get("utc")
-            if sched and actual:
-                sched_time = datetime.strptime(sched, "%Y-%m-%d %H:%MZ")
-                actual_time = datetime.strptime(actual, "%Y-%m-%d %H:%MZ")
-                delay_min = (actual_time - sched_time).total_seconds() / 60
-
-                if delay_min > 15:
-                    stats["delayed"] += 1
-                else:
-                    stats["on_time"] += 1
-
-                total_delay += delay_min
-                stats["details"].append(
-                    {
-                        "date": flight_date,
-                        "status": "Delayed" if delay_min > 15 else "On Time",
-                        "delay_minutes": round(delay_min),
-                    }
-                )
-            else:
-                stats["details"].append(
-                    {
-                        "date": flight_date,
-                        "status": "Unknown (missing times)",
-                        "delay_minutes": None,
-                    }
-                )
-
-        if stats["delayed"] > 0:
-            stats["avg_delay_minutes"] = round(total_delay / stats["delayed"], 2)
-
+        stats = fetch_flight_stats(flight_number, date)
         return JSONResponse(content=stats)
-
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+# @app.get("/flight-stats")
+# async def get_flight_stats(
+#     flight_number: str = Query(..., description="Flight number (e.g., DL324)"),
+#     date: str = Query(..., description="Flight date in YYYY-MM-DD format"),
+# ):
+#     try:
+#         end_date = datetime.strptime(date, "%Y-%m-%d")
+#         start_date = end_date - timedelta(days=7)
+#         url = (
+#             f"https://aerodatabox.p.rapidapi.com/flights/number/{flight_number}/"
+#             f"{start_date.date()}/{end_date.date()}?dateLocalRole=Both"
+#         )
+
+#         headers = {"x-rapidapi-key": RAPIDAPI_KEY, "x-rapidapi-host": RAPIDAPI_HOST}
+
+#         response = requests.get(url, headers=headers)
+#         if response.status_code != 200:
+#             raise Exception(f"Failed to fetch historical data: {response.status_code}")
+
+#         flights = response.json() or []
+
+#         stats = {
+#             "total_flights": 0,
+#             "on_time": 0,
+#             "delayed": 0,
+#             "cancelled": 0,
+#             "avg_delay_minutes": 0.0,
+#             "details": [],
+#         }
+
+#         total_delay = 0
+#         for flight in flights:
+#             stats["total_flights"] += 1
+#             status = flight.get("status", "").lower()
+#             flight_date = (
+#                 flight.get("departure", {})
+#                 .get("scheduledTime", {})
+#                 .get("local", "Unknown")
+#             )
+
+#             if status == "cancelled":
+#                 stats["cancelled"] += 1
+#                 stats["details"].append(
+#                     {"date": flight_date, "status": "Cancelled", "delay_minutes": None}
+#                 )
+#                 continue
+
+#             sched = flight.get("departure", {}).get("scheduledTime", {}).get("utc")
+#             actual = flight.get("departure", {}).get("runwayTime", {}).get("utc")
+#             if sched and actual:
+#                 sched_time = datetime.strptime(sched, "%Y-%m-%d %H:%MZ")
+#                 actual_time = datetime.strptime(actual, "%Y-%m-%d %H:%MZ")
+#                 delay_min = (actual_time - sched_time).total_seconds() / 60
+
+#                 if delay_min > 15:
+#                     stats["delayed"] += 1
+#                 else:
+#                     stats["on_time"] += 1
+
+#                 total_delay += delay_min
+#                 stats["details"].append(
+#                     {
+#                         "date": flight_date,
+#                         "status": "Delayed" if delay_min > 15 else "On Time",
+#                         "delay_minutes": round(delay_min),
+#                     }
+#                 )
+#             else:
+#                 stats["details"].append(
+#                     {
+#                         "date": flight_date,
+#                         "status": "Unknown (missing times)",
+#                         "delay_minutes": None,
+#                     }
+#                 )
+
+#         if stats["delayed"] > 0:
+#             stats["avg_delay_minutes"] = round(total_delay / stats["delayed"], 2)
+
+#         return JSONResponse(content=stats)
+
+#     except Exception as e:
+#         return JSONResponse(status_code=500, content={"error": str(e)})
 
 
 if __name__ == "__main__":
