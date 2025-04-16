@@ -3,7 +3,9 @@ import requests
 from datetime import date
 
 st.title("Airline Compensation Claim Assistant")
-st.write("Enter the flight number and flight date to check eligibility for compensation or benefits.")
+st.write(
+    "Enter the flight number and flight date to check eligibility for compensation or benefits."
+)
 
 # Input fields
 flight_number = st.text_input("Flight Number (e.g., DL324):")
@@ -15,6 +17,19 @@ if "compensation_fetched" not in st.session_state:
     st.session_state.compensation_fetched = False
 if "output_text" not in st.session_state:
     st.session_state.output_text = ""
+if "flight_details" not in st.session_state:
+    st.session_state.flight_details = {}
+if "cancellation_reason" not in st.session_state:
+    st.session_state.cancellation_reason = ""
+
+if st.session_state.compensation_fetched and st.session_state.output_text:
+    st.markdown("### 💬 LLM Answer")
+    st.markdown(st.session_state.output_text)
+
+if st.session_state.compensation_fetched and st.session_state.flight_details:
+    st.markdown("### ✈️ Flight Details")
+    st.json(st.session_state.flight_details)
+
 
 # Submit button
 if st.button("Submit"):
@@ -33,11 +48,11 @@ if st.button("Submit"):
                     if line:
                         st.session_state.output_text += line.strip() + " "
 
-                formatted_text = (
-                    st.session_state.output_text
-                    .replace("<think>", "\n## Reasoning\n\n")
-                    .replace("</think>", "\n## Final Answer\n\n")
-                )
+                st.session_state.flight_details = {}
+
+                formatted_text = st.session_state.output_text.replace(
+                    "<think>", "\n## Reasoning\n\n"
+                ).replace("</think>", "\n## Final Answer\n\n")
                 st.markdown("**Response:**")
                 st.markdown(formatted_text)
             else:
@@ -47,6 +62,10 @@ if st.button("Submit"):
 
 # Flight History button (shown only after compensation is fetched)
 if st.session_state.compensation_fetched:
+    if "flight_details" not in st.session_state:
+        st.session_state.flight_details = None
+    if "cancellation_reason" not in st.session_state:
+        st.session_state.cancellation_reason = ""
     if st.button("Show Flight History for Last 7 Days"):
         stats_url = f"http://localhost:8000/flight-stats?flight_number={flight_number}&date={date_str}"
         st.info("Fetching flight stats...")
@@ -63,6 +82,30 @@ if st.session_state.compensation_fetched:
                 if stats["avg_delay_minutes"]:
                     st.metric("Avg Delay (min)", stats["avg_delay_minutes"])
             else:
-                st.error(f"Flight stats error {stats_response.status_code}: {stats_response.text}")
+                st.error(
+                    f"Flight stats error {stats_response.status_code}: {stats_response.text}"
+                )
         except Exception as e:
             st.error(f"An error occurred: {e}")
+
+if st.button("Why was this flight cancelled?"):
+    cancel_url = f"http://localhost:8000/cancellation-reason?flight_number={flight_number}&date={date_str}"
+    try:
+        cancel_response = requests.get(cancel_url)
+        if cancel_response.status_code == 200:
+            cancel_data = cancel_response.json()
+            st.session_state.cancellation_reason = cancel_data.get(
+                "cancellation_reason", "No reason found."
+            )
+        else:
+            st.session_state.cancellation_reason = (
+                f"Error {cancel_response.status_code}: {cancel_response.text}"
+            )
+    except Exception as e:
+        st.session_state.cancellation_reason = (
+            f"Error fetching cancellation reason: {e}"
+        )
+
+    if st.session_state.cancellation_reason:
+        st.markdown("### ❌ Cancellation Reason")
+        st.info(st.session_state.cancellation_reason)
