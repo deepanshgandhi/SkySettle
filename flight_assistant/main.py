@@ -27,19 +27,44 @@ app.add_middleware(
 
 RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY")
 RAPIDAPI_HOST = "aerodatabox.p.rapidapi.com"
+BRAVE_API_KEY = os.getenv("BRAVE_API_KEY")
+BRAVE_API_URL = "https://api.search.brave.com/res/v1/web/search"
 
 policies = load_policies("data/airline_policies.json")
 
-def get_flight_details(flight_number: str, date: str):
+
+def query_brave_search(query: str, count: int = 5):
+    headers = {"Accept": "application/json", "X-Subscription-Token": BRAVE_API_KEY}
+    params = {"q": query, "count": count}
+
+    try:
+        response = requests.get(BRAVE_API_URL, headers=headers, params=params)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        print(f"[Brave Search Error] {e}")
+        return {}
+
+
+def extract_brave_snippets(brave_response, max_snippets=5):
+    try:
+        results = brave_response.get("web", {}).get("results", [])
+        snippets = [r["description"] for r in results if "description" in r]
+        return snippets[:max_snippets]
+    except Exception as e:
+        print(f"Error parsing Brave results: {e}")
+        return []
+
+
+def get_flight_details(flight_number: str, date: str, cancellation_reason_flag: bool):
     url = f"https://aerodatabox.p.rapidapi.com/flights/number/{flight_number}/{date}"
-    headers = {
-        "x-rapidapi-key": RAPIDAPI_KEY,
-        "x-rapidapi-host": RAPIDAPI_HOST
-    }
+    headers = {"x-rapidapi-key": RAPIDAPI_KEY, "x-rapidapi-host": RAPIDAPI_HOST}
     response = requests.get(url, headers=headers)
     if response.status_code != 200:
-        raise Exception(f"Error fetching flight details: {response.status_code} {response.text}")
-    
+        raise Exception(
+            f"Error fetching flight details: {response.status_code} {response.text}"
+        )
+
     data = response.json()
     flights = data or []
 
@@ -51,17 +76,44 @@ def get_flight_details(flight_number: str, date: str):
     flight_name = flight.get("airline", {}).get("name", "Unknown")
     source = flight.get("departure", {}).get("airport", {}).get("iata", "Unknown")
     destination = flight.get("arrival", {}).get("airport", {}).get("iata", "Unknown")
-    scheduled_time = flight.get("departure", {}).get("scheduledTime", {}).get("local", "Unknown")
-    actual_time = flight.get("departure", {}).get("runwayTime", {}).get("local", "Unknown")
-    status = flight.get("status","Unknown")
+
+    scheduled_time = (
+        flight.get("departure", {}).get("scheduledTime", {}).get("local", "Unknown")
+    )
+    actual_time = (
+        flight.get("departure", {}).get("runwayTime", {}).get("local", "Unknown")
+    )
+    status = flight.get("status", "Unknown")
+    cancellation_reason = "No reason available"
+    if cancellation_reason_flag:
+        if "cancel" in status.lower() or "delay" in status.lower():
+            query = f"{flight_name} flight cancellation reason {date}"
+            brave_response = query_brave_search(query)
+            web_snippets = extract_brave_snippets(brave_response)
+
+            cancellation_reason = infer_cancellation_reason(
+                {
+                    "flight_name": flight_name,
+                    "source": source,
+                    "destination": destination,
+                    "scheduled_time": scheduled_time,
+                    "actual_time": actual_time,
+                    "status": status,
+                },
+                web_snippets,
+            )
+
     return {
         "flight_name": flight_name,
         "source": source,
         "destination": destination,
         "scheduled_time": scheduled_time,
         "actual_time": actual_time,
-        "status": status
+        "status": status,
+        "cancellation_reason": cancellation_reason,
+
     }
+
 
 def build_prompt(flight_details, policy):
     prompt = (
@@ -82,22 +134,59 @@ def build_prompt(flight_details, policy):
     return prompt
 
 
+def infer_cancellation_reason(flight_details, web_snippets=None):
+    snippet_text = "\n".join(web_snippets or [])
+    print("Infer web search", snippet_text)
+    prompt = (
+        "You are a knowledgeable aviation assistant. A flight was cancelled. "
+        "Use the following factual information from the web and the flight details to summarize the likely reason in 3–4 sentences.\n\n"
+        f"Flight: {flight_details['flight_name']}\n"
+        f"From: {flight_details['source']} To: {flight_details['destination']}\n"
+        f"Scheduled Departure: {flight_details['scheduled_time']}\n"
+        f"Actual Departure: {flight_details['actual_time']}\n"
+        f"Status: {flight_details['status']}\n\n"
+        f"Factual Web Data:\n{snippet_text}\n\n"
+        "What is the most likely reason for cancellation? Respond in 3–4 concise sentences."
+    )
+    return "".join(call_language_model(prompt)).strip()
 
+
+@app.get("/cancellation-reason")
+async def get_cancellation_reason(
+    flight_number: str = Query(..., description="Flight number (e.g., DL324)"),
+    date: str = Query(..., description="Flight date in YYYY-MM-DD format"),
+):
+    try:
+        flight_details = get_flight_details(flight_number, date, True)
+        structured_reason = flight_details.get(
+            "cancellation_reason", "No reason available"
+        )
+
+        return JSONResponse(content={"cancellation_reason": structured_reason})
+
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 
 @app.get("/compensation")
 async def get_compensation(
     flight_number: str = Query(..., description="Flight number (e.g., BA2490)"),
-    date: str = Query(..., description="Flight date in YYYY-MM-DD format")
+    date: str = Query(..., description="Flight date in YYYY-MM-DD format"),
 ):
     try:
         # Get flight details from AeroDataBox API
-        flight_details = get_flight_details(flight_number, date)
+        flight_details = get_flight_details(flight_number, date, False)
 
+        # Get compensation policy based on flight name.
+        # The key is the flight name returned from the API.
         flight_name = flight_details["flight_name"]
         normalized_name = flight_name.lower()
 
-        matching_policies = [p for p in policies if p["airline"].lower() == normalized_name]
+        # Filter all policies matching that airline (case-insensitive)
+        matching_policies = [
+            p for p in policies if p["airline"].lower() == normalized_name
+        ]
+
         if not matching_policies:
             policy = "No compensation policy available for this flight."
         else:
@@ -108,21 +197,19 @@ async def get_compensation(
                 all_does_not_commit.extend(p.get("does_not_commit", []))
 
             policy = (
-                f"Commits:\n- " + "\n- ".join(all_commits) +
-                f"\n\nDoes Not Commit:\n- " + "\n- ".join(all_does_not_commit)
+                f"Commits:\n- "
+                + "\n- ".join(all_commits)
+                + f"\n\nDoes Not Commit:\n- "
+                + "\n- ".join(all_does_not_commit)
             )
 
+        # Build prompt for the language model
         prompt = build_prompt(flight_details, policy)
 
-        def stream_generator():
-            try:
-                for chunk in call_language_model(prompt):
-                    yield chunk.encode("utf-8")
-                    time.sleep(0.01)  # optional: makes streaming feel more natural
-            except Exception as e:
-                yield f"\n\n[Error occurred: {str(e)}]".encode("utf-8")
+        # Call the language model and stream the response word by word
+        response = "".join(call_language_model(prompt)).strip()
+        return JSONResponse(content={"answer": response})
 
-        return StreamingResponse(stream_generator(), media_type="text/plain")
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
@@ -131,7 +218,7 @@ async def get_compensation(
 @app.get("/flight-stats")
 async def get_flight_stats(
     flight_number: str = Query(..., description="Flight number (e.g., DL324)"),
-    date: str = Query(..., description="Flight date in YYYY-MM-DD format")
+    date: str = Query(..., description="Flight date in YYYY-MM-DD format"),
 ):
     try:
         end_date = datetime.strptime(date, "%Y-%m-%d")
@@ -141,10 +228,7 @@ async def get_flight_stats(
             f"{start_date.date()}/{end_date.date()}?dateLocalRole=Both"
         )
 
-        headers = {
-            "x-rapidapi-key": RAPIDAPI_KEY,
-            "x-rapidapi-host": RAPIDAPI_HOST
-        }
+        headers = {"x-rapidapi-key": RAPIDAPI_KEY, "x-rapidapi-host": RAPIDAPI_HOST}
 
         response = requests.get(url, headers=headers)
         if response.status_code != 200:
@@ -158,22 +242,24 @@ async def get_flight_stats(
             "delayed": 0,
             "cancelled": 0,
             "avg_delay_minutes": 0.0,
-            "details": []
+            "details": [],
         }
 
         total_delay = 0
         for flight in flights:
             stats["total_flights"] += 1
             status = flight.get("status", "").lower()
-            flight_date = flight.get("departure", {}).get("scheduledTime", {}).get("local", "Unknown")
+            flight_date = (
+                flight.get("departure", {})
+                .get("scheduledTime", {})
+                .get("local", "Unknown")
+            )
 
             if status == "cancelled":
                 stats["cancelled"] += 1
-                stats["details"].append({
-                    "date": flight_date,
-                    "status": "Cancelled",
-                    "delay_minutes": None
-                })
+                stats["details"].append(
+                    {"date": flight_date, "status": "Cancelled", "delay_minutes": None}
+                )
                 continue
 
             sched = flight.get("departure", {}).get("scheduledTime", {}).get("utc")
@@ -189,17 +275,21 @@ async def get_flight_stats(
                     stats["on_time"] += 1
 
                 total_delay += delay_min
-                stats["details"].append({
-                    "date": flight_date,
-                    "status": "Delayed" if delay_min > 15 else "On Time",
-                    "delay_minutes": round(delay_min)
-                })
+                stats["details"].append(
+                    {
+                        "date": flight_date,
+                        "status": "Delayed" if delay_min > 15 else "On Time",
+                        "delay_minutes": round(delay_min),
+                    }
+                )
             else:
-                stats["details"].append({
-                    "date": flight_date,
-                    "status": "Unknown (missing times)",
-                    "delay_minutes": None
-                })
+                stats["details"].append(
+                    {
+                        "date": flight_date,
+                        "status": "Unknown (missing times)",
+                        "delay_minutes": None,
+                    }
+                )
 
         if stats["delayed"] > 0:
             stats["avg_delay_minutes"] = round(total_delay / stats["delayed"], 2)
@@ -208,6 +298,7 @@ async def get_flight_stats(
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
+
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
