@@ -41,8 +41,8 @@ if st.button("Submit"):
         try:
             response = requests.get(api_url, stream=True)
             if response.status_code == 200:
-                st.session_state.compensation_fetched = True
                 st.session_state.output_text = ""
+                placeholder = st.empty()
 
                 for line in response.iter_lines(decode_unicode=True):
                     if line:
@@ -55,6 +55,7 @@ if st.button("Submit"):
                 ).replace("</think>", "\n## Final Answer\n\n")
                 st.markdown("**Response:**")
                 st.markdown(formatted_text)
+
             else:
                 st.error(f"API Error {response.status_code}: {response.text}")
         except Exception as e:

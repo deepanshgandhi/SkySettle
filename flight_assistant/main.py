@@ -5,14 +5,25 @@ import requests
 import os
 import uvicorn
 from datetime import datetime, timedelta
+import time
 
 from flight_assistant.policy_loader import load_policies
 from flight_assistant.lm import call_language_model
 from dotenv import load_dotenv
-
+from fastapi.middleware.cors import CORSMiddleware
 load_dotenv()
 
 app = FastAPI()
+
+# add CORS middleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8081",],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY")
 RAPIDAPI_HOST = "aerodatabox.p.rapidapi.com"
@@ -65,6 +76,7 @@ def get_flight_details(flight_number: str, date: str, cancellation_reason_flag: 
     flight_name = flight.get("airline", {}).get("name", "Unknown")
     source = flight.get("departure", {}).get("airport", {}).get("iata", "Unknown")
     destination = flight.get("arrival", {}).get("airport", {}).get("iata", "Unknown")
+
     scheduled_time = (
         flight.get("departure", {}).get("scheduledTime", {}).get("local", "Unknown")
     )
@@ -99,6 +111,7 @@ def get_flight_details(flight_number: str, date: str, cancellation_reason_flag: 
         "actual_time": actual_time,
         "status": status,
         "cancellation_reason": cancellation_reason,
+
     }
 
 
@@ -173,6 +186,7 @@ async def get_compensation(
         matching_policies = [
             p for p in policies if p["airline"].lower() == normalized_name
         ]
+
         if not matching_policies:
             policy = "No compensation policy available for this flight."
         else:
@@ -195,6 +209,7 @@ async def get_compensation(
         # Call the language model and stream the response word by word
         response = "".join(call_language_model(prompt)).strip()
         return JSONResponse(content={"answer": response})
+
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
