@@ -294,7 +294,7 @@ def fetch_flight_stats(flight_number: str, date: str):
             flight.get("departure", {}).get("scheduledTime", {}).get("local", "Unknown")
         )
 
-        if status == "cancelled":
+        if status == "canceled":
             stats["cancelled"] += 1
             stats["details"].append(
                 {"date": flight_date, "status": "Cancelled", "delay_minutes": None}
