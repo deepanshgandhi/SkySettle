@@ -89,11 +89,30 @@ def get_flight_details(flight_number: str, date: str, cancellation_reason_flag: 
     status = flight.get("status", "Unknown")
     cancellation_reason = "No reason available"
     if cancellation_reason_flag:
-        if "cancel" in status.lower() or "delay" in status.lower():
+        flight_stats = fetch_flight_stats(flight_number, date)
+        if "cancel" in status.lower():
             query = f"{flight_name} flight cancellation reason {date}"
             brave_response = query_brave_search(query)
             web_snippets = extract_brave_snippets(brave_response)
-            flight_stats = fetch_flight_stats(flight_number, date)
+
+            cancellation_reason = infer_cancellation_reason(
+                {
+                    "flight_name": flight_name,
+                    "source": source,
+                    "destination": destination,
+                    "scheduled_time": scheduled_time,
+                    "actual_time": actual_time,
+                    "status": status,
+                },
+                web_snippets,
+                flight_stats=flight_stats,
+            )
+
+        if flight_stats.get("delayed") > 0:
+            print("Flight delayed")
+            query = f"{flight_name} flight delay reason {date}"
+            brave_response = query_brave_search(query)
+            web_snippets = extract_brave_snippets(brave_response)
 
             cancellation_reason = infer_cancellation_reason(
                 {
@@ -183,7 +202,15 @@ async def get_cancellation_reason(
             "cancellation_reason", "No reason available"
         )
 
-        return JSONResponse(content={"cancellation_reason": structured_reason})
+        # Wrap the text as a generator to stream word-by-word
+        def word_stream(text):
+            for word in text.split():
+                yield word + " "
+                time.sleep(0.03)  # smooth typing effect
+
+        return StreamingResponse(
+            word_stream(structured_reason), media_type="text/plain"
+        )
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
@@ -227,9 +254,8 @@ async def get_compensation(
         # Build prompt for the language model
         prompt = build_prompt(flight_details, policy)
 
-        # Call the language model and stream the response word by word
-        response = "".join(call_language_model(prompt)).strip()
-        return JSONResponse(content={"answer": response})
+        stream = call_language_model(prompt)
+        return StreamingResponse(stream, media_type="text/plain")
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
@@ -320,91 +346,6 @@ async def get_flight_stats(
         return JSONResponse(content=stats)
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
-
-
-# @app.get("/flight-stats")
-# async def get_flight_stats(
-#     flight_number: str = Query(..., description="Flight number (e.g., DL324)"),
-#     date: str = Query(..., description="Flight date in YYYY-MM-DD format"),
-# ):
-#     try:
-#         end_date = datetime.strptime(date, "%Y-%m-%d")
-#         start_date = end_date - timedelta(days=7)
-#         url = (
-#             f"https://aerodatabox.p.rapidapi.com/flights/number/{flight_number}/"
-#             f"{start_date.date()}/{end_date.date()}?dateLocalRole=Both"
-#         )
-
-#         headers = {"x-rapidapi-key": RAPIDAPI_KEY, "x-rapidapi-host": RAPIDAPI_HOST}
-
-#         response = requests.get(url, headers=headers)
-#         if response.status_code != 200:
-#             raise Exception(f"Failed to fetch historical data: {response.status_code}")
-
-#         flights = response.json() or []
-
-#         stats = {
-#             "total_flights": 0,
-#             "on_time": 0,
-#             "delayed": 0,
-#             "cancelled": 0,
-#             "avg_delay_minutes": 0.0,
-#             "details": [],
-#         }
-
-#         total_delay = 0
-#         for flight in flights:
-#             stats["total_flights"] += 1
-#             status = flight.get("status", "").lower()
-#             flight_date = (
-#                 flight.get("departure", {})
-#                 .get("scheduledTime", {})
-#                 .get("local", "Unknown")
-#             )
-
-#             if status == "cancelled":
-#                 stats["cancelled"] += 1
-#                 stats["details"].append(
-#                     {"date": flight_date, "status": "Cancelled", "delay_minutes": None}
-#                 )
-#                 continue
-
-#             sched = flight.get("departure", {}).get("scheduledTime", {}).get("utc")
-#             actual = flight.get("departure", {}).get("runwayTime", {}).get("utc")
-#             if sched and actual:
-#                 sched_time = datetime.strptime(sched, "%Y-%m-%d %H:%MZ")
-#                 actual_time = datetime.strptime(actual, "%Y-%m-%d %H:%MZ")
-#                 delay_min = (actual_time - sched_time).total_seconds() / 60
-
-#                 if delay_min > 15:
-#                     stats["delayed"] += 1
-#                 else:
-#                     stats["on_time"] += 1
-
-#                 total_delay += delay_min
-#                 stats["details"].append(
-#                     {
-#                         "date": flight_date,
-#                         "status": "Delayed" if delay_min > 15 else "On Time",
-#                         "delay_minutes": round(delay_min),
-#                     }
-#                 )
-#             else:
-#                 stats["details"].append(
-#                     {
-#                         "date": flight_date,
-#                         "status": "Unknown (missing times)",
-#                         "delay_minutes": None,
-#                     }
-#                 )
-
-#         if stats["delayed"] > 0:
-#             stats["avg_delay_minutes"] = round(total_delay / stats["delayed"], 2)
-
-#         return JSONResponse(content=stats)
-
-#     except Exception as e:
-#         return JSONResponse(status_code=500, content={"error": str(e)})
 
 
 if __name__ == "__main__":
